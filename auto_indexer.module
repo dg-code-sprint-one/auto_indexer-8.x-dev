@@ -1,0 +1,76 @@
+<?php
+
+/**
+* @file
+* Auto-index: Automatically indexes node content on update.
+*
+* Uses Drupal's search module to automatically index updated nodes as and when they are updated.
+* This means that a user can update node content and that content is immediately searchable,
+* by users of the site.
+*
+*/
+
+use Drupal\node\NodeInterface;
+use Drupal\comment\CommentInterface;
+use Drupal\auto_indexer\Controller\AutoIndexer;
+
+/**
+ * Implements hook_ENTITY_TYPE_delete() for node entities.
+ */
+function auto_indexer_node_delete(NodeInterface $node) {
+	
+  // Update search totals to reflect deleted node content.
+  search_update_totals();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for node entities.
+ */
+function auto_indexer_node_update(NodeInterface $node) {
+  AutoIndexer::autoIndexNode($node);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for node entities.
+ */
+function auto_indexer_node_insert(NodeInterface $node) {
+  AutoIndexer::autoIndexNode($node);
+
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for comment entities.
+ */
+function auto_indexer_comment_insert(CommentInterface $comment) {
+  AutoIndexer::autoIndexNode_comment($comment);
+
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for comment entities.
+ */
+function auto_indexer_comment_update(CommentInterface $comment) {
+  AutoIndexer::autoIndexNode_comment($comment);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete() for comment entities.
+ */
+function auto_indexer_comment_delete(CommentInterface $comment) {
+  AutoIndexer::autoIndexNode_comment($comment);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_publish() for comment entities.
+ */
+function auto_indexer_comment_publish(CommentInterface $comment) {
+  AutoIndexer::autoIndexNode_comment($comment);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_unpublish() for comment entities.
+ */
+function auto_indexer_comment_unpublish(CommentInterface $comment) {
+  AutoIndexer::autoIndexNode_comment($comment);
+}
+

@@ -1,0 +1,7 @@
+name: Auto Indexer
+description: 'Automatically updates the search index after a node has been added/updated in Drupal 8'
+type: module
+dependencies:
+  - search
+core: 8.x
+package: Search
