@@ -12,7 +12,6 @@
 
 use Drupal\node\NodeInterface;
 use Drupal\comment\CommentInterface;
-use Drupal\auto_indexer\Controller\AutoIndexer;
 
 /**
  * Implements hook_ENTITY_TYPE_delete() for node entities.
@@ -27,47 +26,140 @@ function auto_indexer_node_delete(NodeInterface $node) {
  * Implements hook_ENTITY_TYPE_update() for node entities.
  */
 function auto_indexer_node_update(NodeInterface $node) {
-  AutoIndexer::autoIndexNode($node);
+  _autoIndexNode($node);
 }
 
 /**
  * Implements hook_ENTITY_TYPE_insert() for node entities.
  */
 function auto_indexer_node_insert(NodeInterface $node) {
-  AutoIndexer::autoIndexNode($node);
+  _autoIndexNode($node);
 }
 
 /**
  * Implements hook_ENTITY_TYPE_insert() for comment entities.
  */
 function auto_indexer_comment_insert(CommentInterface $comment) {
-  AutoIndexer::autoIndexNode_comment($comment);
+  _autoIndexNode_comment($comment);
 }
 
 /**
  * Implements hook_ENTITY_TYPE_update() for comment entities.
  */
 function auto_indexer_comment_update(CommentInterface $comment) {
-  AutoIndexer::autoIndexNode_comment($comment);
+  _autoIndexNode_comment($comment);
 }
 
 /**
  * Implements hook_ENTITY_TYPE_delete() for comment entities.
  */
 function auto_indexer_comment_delete(CommentInterface $comment) {
-  AutoIndexer::autoIndexNode_comment($comment);
+  _autoIndexNode_comment($comment);
 }
 
 /**
  * Implements hook_ENTITY_TYPE_publish() for comment entities.
  */
 function auto_indexer_comment_publish(CommentInterface $comment) {
-  AutoIndexer::autoIndexNode_comment($comment);
+  _autoIndexNode_comment($comment);
 }
 
 /**
  * Implements hook_ENTITY_TYPE_unpublish() for comment entities.
  */
 function auto_indexer_comment_unpublish(CommentInterface $comment) {
-  AutoIndexer::autoIndexNode_comment($comment);
+  _autoIndexNode_comment($comment);
+}
+
+/**
+ * Indexes a single node.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ *   The node to index.
+ */
+function _indexNode(NodeInterface &$node) {
+  $languages   = $node->getTranslationLanguages();
+  $node_render = \Drupal::entityManager()->getViewBuilder('node');
+  foreach ($languages as $language) {
+    $node = $node->getTranslation($language->getId());
+
+    // Render the node.
+    $build = $node_render->view($node, 'search_index', $language->getId());
+    unset($build['#theme']);
+
+    // Add the title to text so it is searchable.
+    $build['search_title'] = [
+      '#prefix'     => '<h1>',
+      '#plain_text' => $node->label(),
+      '#suffix'     => '</h1>',
+      '#weight'     => -1000
+    ];
+    $text = \Drupal::service('renderer')->renderPlain($build);
+
+    // Fetch extra data normally not visible.
+    $extra = \Drupal::moduleHandler()->invokeAll('node_update_index', [$node]);
+    foreach ($extra as $t) {
+      $text .= $t;
+    }
+
+    // Update index, using search index "type" equal to the plugin ID.
+  	// "node_search" is a static plugin ID for all indexNode.
+    search_index(node_search, $node->id(), $language->getId(), $text);
+  }
+}
+
+/**
+ * Function triggered on node insert and update.
+ */
+function _autoIndexNode(NodeInterface &$node) {
+
+	// Static variable to keep track of any node ids already indexed.
+	static $indexed_nodes = array();
+
+  // Extract the node ID
+	$node_id = $node->id();
+
+	// Check if the node ID has already been indexed.
+	if (array_search($node_id, $indexed_nodes) === false) {
+
+		// Ensure we force the cache to be updated so latest content is indexed.
+		$node = \Drupal::entityManager()->getStorage('node')->load($node_id);
+
+		// Do the indexing of this node only.  			
+		_indexNode($node);
+
+		// Update search totals.
+		search_update_totals();
+
+		// Append to array to ensure node only indexed once per action.
+		$indexed_nodes[] = $node_id;
+  }
+}
+
+/**
+ * Function triggered on comment insert/update/delete/published/unpublished.
+ */
+function _autoIndexNode_comment(CommentInterface &$comment) {
+
+	// Static variable to keep track of any node ids already indexed.
+	static $indexed_nodes = array();
+
+	// Extract the comment using node ID
+	$node_id = $comment->getCommentedEntityId();
+
+	// Check if the node ID has already been indexed.
+	if (array_search($node_id, $indexed_nodes) === false) {
+
+		// Ensure we force the cache to be updated so latest content is indexed.
+		$node = \Drupal::entityManager()->getStorage('node')->load($node_id);
+
+		// Do the indexing of this node only.
+		_indexNode($node);
+
+		// Update search totals.
+		search_update_totals();
+
+		// Append to array to ensure node only indexed once per action.
+		$indexed_nodes[] = $node_id;
+	}
 }
