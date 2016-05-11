@@ -32,7 +32,7 @@ class SearchIndex extends PluginBase{
 	      $text .= $t;
 	    }
 	    // Update index, using search index "type" equal to the plugin ID.
-      // "node_search" is a static plugin ID for all indexNode.
+      	// "node_search" is a static plugin ID for all indexNode.
 	    search_index(node_search, $node->id(), $language->getId(), $text);
 	  }
 	}
