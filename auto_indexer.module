@@ -17,7 +17,8 @@ use Drupal\auto_indexer\Controller\AutoIndexer;
 /**
  * Implements hook_ENTITY_TYPE_delete() for node entities.
  */
-function auto_indexer_node_delete(NodeInterface $node) {	
+function auto_indexer_node_delete(NodeInterface $node) {
+
   // Update search totals to reflect deleted node content.
   search_update_totals();
 }
@@ -41,7 +42,6 @@ function auto_indexer_node_insert(NodeInterface $node) {
  */
 function auto_indexer_comment_insert(CommentInterface $comment) {
   AutoIndexer::autoIndexNode_comment($comment);
-
 }
 
 /**
@@ -71,4 +71,3 @@ function auto_indexer_comment_publish(CommentInterface $comment) {
 function auto_indexer_comment_unpublish(CommentInterface $comment) {
   AutoIndexer::autoIndexNode_comment($comment);
 }
-
