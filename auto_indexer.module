@@ -129,7 +129,7 @@ function auto_indexer_index_node(NodeInterface &$node) {
 
     // Update index, using search index "type" equal to the plugin ID.
     // "node_search" is a static plugin ID for all indexNode.
-    search_index(node_search, $node->id(), $language->getId(), $text);
+    search_index('node_search', $node->id(), $language->getId(), $text);
   }
 }
 
