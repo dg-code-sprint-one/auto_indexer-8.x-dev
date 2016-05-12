@@ -73,6 +73,30 @@ function auto_indexer_comment_unpublish(CommentInterface $comment) {
 }
 
 /**
+ * Function triggered on node insert and update.
+ */
+function auto_indexer_auto_index_node(NodeInterface &$node) {
+
+  // Extract the node ID.
+  $node_id = $node->id();
+
+  // Do the node ID has already been indexed.
+  auto_indexer_indexing($node_id);
+}
+
+/**
+ * Function triggered on comment insert/update/delete/published/unpublished.
+ */
+function auto_indexer_auto_index_node_comment(CommentInterface &$comment) {
+
+  // Extract the comment using node ID.
+  $node_id = $comment->getCommentedEntityId();
+
+  // Do the node ID has already been indexed.
+  auto_indexer_indexing($node_id);
+}
+
+/**
  * Indexes a single node.
  *
  * @param \Drupal\node\NodeInterface $node
@@ -110,43 +134,12 @@ function auto_indexer_index_node(NodeInterface &$node) {
 }
 
 /**
- * Function triggered on node insert and update.
+ * Function triggered on node ID has already been indexed.
  */
-function auto_indexer_auto_index_node(NodeInterface &$node) {
+function auto_indexer_indexing($node_id) {
 
   // Static variable to keep track of any node ids already indexed.
   static $indexed_nodes = array();
-
-  // Extract the node ID.
-  $node_id = $node->id();
-
-  // Check if the node ID has already been indexed.
-  if (array_search($node_id, $indexed_nodes) === FALSE) {
-
-    // Ensure we force the cache to be updated so latest content is indexed.
-    $node = \Drupal::entityManager()->getStorage('node')->load($node_id);
-
-    // Do the indexing of this node only.
-    auto_indexer_index_node($node);
-
-    // Update search totals.
-    search_update_totals();
-
-    // Append to array to ensure node only indexed once per action.
-    $indexed_nodes[] = $node_id;
-  }
-}
-
-/**
- * Function triggered on comment insert/update/delete/published/unpublished.
- */
-function auto_indexer_auto_index_node_comment(CommentInterface &$comment) {
-
-  // Static variable to keep track of any node ids already indexed.
-  static $indexed_nodes = array();
-
-  // Extract the comment using node ID.
-  $node_id = $comment->getCommentedEntityId();
 
   // Check if the node ID has already been indexed.
   if (array_search($node_id, $indexed_nodes) === FALSE) {
