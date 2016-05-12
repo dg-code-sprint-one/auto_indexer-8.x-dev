@@ -1,9 +1,14 @@
 <?php
 
 /**
+ * @file
+ * Install, Set the weight for the auto_indexer module.
+ */
+
+/**
  * Implements hook_install().
  */
 function auto_indexer_install() {
-	// Add a high number to move our module to the end of the load queue.
-  module_set_weight('auto_indexer', 10000);	
+  // Add a high number to move our module to the end of the load queue.
+  module_set_weight('auto_indexer', 10000);
 }

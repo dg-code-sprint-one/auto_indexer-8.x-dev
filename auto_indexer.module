@@ -1,20 +1,21 @@
 <?php
 
 /**
-* @file
-* Auto-index: Automatically indexes node content on update.
-*
-* Uses Drupal's search module to automatically index updated nodes as and when they are updated.
-* This means that a user can update node content and that content is immediately searchable,
-* by users of the site.
-*
-*/
+ * @file
+ * Auto-index: Automatically indexes node content on update.
+ *
+ * Uses Drupal's search module to automatically index updated nodes as
+ * and when they are updated.
+ *
+ * This means that a user can update node content and that content is
+ * immediately searchable, by users of the site.
+ */
 
 use Drupal\node\NodeInterface;
 use Drupal\comment\CommentInterface;
 
 /**
- * Implements hook_ENTITY_TYPE_delete() for node entities.
+ * Implements hook_ENTITY_TYPE_delete().
  */
 function auto_indexer_node_delete(NodeInterface $node) {
 
@@ -23,52 +24,52 @@ function auto_indexer_node_delete(NodeInterface $node) {
 }
 
 /**
- * Implements hook_ENTITY_TYPE_update() for node entities.
+ * Implements hook_ENTITY_TYPE_update().
  */
 function auto_indexer_node_update(NodeInterface $node) {
-  _autoIndexNode($node);
+  auto_indexer_auto_index_node($node);
 }
 
 /**
- * Implements hook_ENTITY_TYPE_insert() for node entities.
+ * Implements hook_ENTITY_TYPE_insert().
  */
 function auto_indexer_node_insert(NodeInterface $node) {
-  _autoIndexNode($node);
+  auto_indexer_auto_index_node($node);
 }
 
 /**
- * Implements hook_ENTITY_TYPE_insert() for comment entities.
+ * Implements hook_ENTITY_TYPE_insert().
  */
 function auto_indexer_comment_insert(CommentInterface $comment) {
-  _autoIndexNode_comment($comment);
+  auto_indexer_auto_index_node_comment($comment);
 }
 
 /**
- * Implements hook_ENTITY_TYPE_update() for comment entities.
+ * Implements hook_ENTITY_TYPE_update().
  */
 function auto_indexer_comment_update(CommentInterface $comment) {
-  _autoIndexNode_comment($comment);
+  auto_indexer_auto_index_node_comment($comment);
 }
 
 /**
- * Implements hook_ENTITY_TYPE_delete() for comment entities.
+ * Implements hook_ENTITY_TYPE_delete().
  */
 function auto_indexer_comment_delete(CommentInterface $comment) {
-  _autoIndexNode_comment($comment);
+  auto_indexer_auto_index_node_comment($comment);
 }
 
 /**
- * Implements hook_ENTITY_TYPE_publish() for comment entities.
+ * Implements hook_ENTITY_TYPE_publish().
  */
 function auto_indexer_comment_publish(CommentInterface $comment) {
-  _autoIndexNode_comment($comment);
+  auto_indexer_auto_index_node_comment($comment);
 }
 
 /**
- * Implements hook_ENTITY_TYPE_unpublish() for comment entities.
+ * Implements hook_ENTITY_TYPE_unpublish().
  */
 function auto_indexer_comment_unpublish(CommentInterface $comment) {
-  _autoIndexNode_comment($comment);
+  auto_indexer_auto_index_node_comment($comment);
 }
 
 /**
@@ -77,7 +78,7 @@ function auto_indexer_comment_unpublish(CommentInterface $comment) {
  * @param \Drupal\node\NodeInterface $node
  *   The node to index.
  */
-function _indexNode(NodeInterface &$node) {
+function auto_indexer_index_node(NodeInterface &$node) {
   $languages   = $node->getTranslationLanguages();
   $node_render = \Drupal::entityManager()->getViewBuilder('node');
   foreach ($languages as $language) {
@@ -92,7 +93,7 @@ function _indexNode(NodeInterface &$node) {
       '#prefix'     => '<h1>',
       '#plain_text' => $node->label(),
       '#suffix'     => '</h1>',
-      '#weight'     => -1000
+      '#weight'     => -1000,
     ];
     $text = \Drupal::service('renderer')->renderPlain($build);
 
@@ -103,7 +104,7 @@ function _indexNode(NodeInterface &$node) {
     }
 
     // Update index, using search index "type" equal to the plugin ID.
-  	// "node_search" is a static plugin ID for all indexNode.
+    // "node_search" is a static plugin ID for all indexNode.
     search_index(node_search, $node->id(), $language->getId(), $text);
   }
 }
@@ -111,55 +112,55 @@ function _indexNode(NodeInterface &$node) {
 /**
  * Function triggered on node insert and update.
  */
-function _autoIndexNode(NodeInterface &$node) {
+function auto_indexer_auto_index_node(NodeInterface &$node) {
 
-	// Static variable to keep track of any node ids already indexed.
-	static $indexed_nodes = array();
+  // Static variable to keep track of any node ids already indexed.
+  static $indexed_nodes = array();
 
-  // Extract the node ID
-	$node_id = $node->id();
+  // Extract the node ID.
+  $node_id = $node->id();
 
-	// Check if the node ID has already been indexed.
-	if (array_search($node_id, $indexed_nodes) === false) {
+  // Check if the node ID has already been indexed.
+  if (array_search($node_id, $indexed_nodes) === FALSE) {
 
-		// Ensure we force the cache to be updated so latest content is indexed.
-		$node = \Drupal::entityManager()->getStorage('node')->load($node_id);
+    // Ensure we force the cache to be updated so latest content is indexed.
+    $node = \Drupal::entityManager()->getStorage('node')->load($node_id);
 
-		// Do the indexing of this node only.  			
-		_indexNode($node);
+    // Do the indexing of this node only.
+    auto_indexer_index_node($node);
 
-		// Update search totals.
-		search_update_totals();
+    // Update search totals.
+    search_update_totals();
 
-		// Append to array to ensure node only indexed once per action.
-		$indexed_nodes[] = $node_id;
+    // Append to array to ensure node only indexed once per action.
+    $indexed_nodes[] = $node_id;
   }
 }
 
 /**
  * Function triggered on comment insert/update/delete/published/unpublished.
  */
-function _autoIndexNode_comment(CommentInterface &$comment) {
+function auto_indexer_auto_index_node_comment(CommentInterface &$comment) {
 
-	// Static variable to keep track of any node ids already indexed.
-	static $indexed_nodes = array();
+  // Static variable to keep track of any node ids already indexed.
+  static $indexed_nodes = array();
 
-	// Extract the comment using node ID
-	$node_id = $comment->getCommentedEntityId();
+  // Extract the comment using node ID.
+  $node_id = $comment->getCommentedEntityId();
 
-	// Check if the node ID has already been indexed.
-	if (array_search($node_id, $indexed_nodes) === false) {
+  // Check if the node ID has already been indexed.
+  if (array_search($node_id, $indexed_nodes) === FALSE) {
 
-		// Ensure we force the cache to be updated so latest content is indexed.
-		$node = \Drupal::entityManager()->getStorage('node')->load($node_id);
+    // Ensure we force the cache to be updated so latest content is indexed.
+    $node = \Drupal::entityManager()->getStorage('node')->load($node_id);
 
-		// Do the indexing of this node only.
-		_indexNode($node);
+    // Do the indexing of this node only.
+    auto_indexer_index_node($node);
 
-		// Update search totals.
-		search_update_totals();
+    // Update search totals.
+    search_update_totals();
 
-		// Append to array to ensure node only indexed once per action.
-		$indexed_nodes[] = $node_id;
-	}
+    // Append to array to ensure node only indexed once per action.
+    $indexed_nodes[] = $node_id;
+  }
 }
